@@ -7,6 +7,9 @@ from execution.trader import calculate_quantity, execute_trade
 from utils.logger import log
 import time
 
+# =========================
+# Binance Client
+# =========================
 client = Client(BINANCE_API_KEY, BINANCE_API_SECRET)
 
 if USE_TESTNET:
@@ -14,15 +17,42 @@ if USE_TESTNET:
 
 log("Bot started")
 
+# =========================
+# Check if already in position
+# =========================
+def already_in_position(client, symbol):
+    account = client.get_account()
+    base_asset = symbol.replace("USDC", "").replace("USDT", "")
+
+    for balance in account["balances"]:
+        if balance["asset"] == base_asset and float(balance["free"]) > 0:
+            return True
+    return False
+
+# =========================
+# Main Loop
+# =========================
 while True:
     try:
-        df = get_klines(client, SYMBOL, TIMEFRAME)
-        df = apply_indicators(df)
+        for symbol in SYMBOLS:
+            df = get_klines(client, symbol, TIMEFRAME)
+            df = apply_indicators(df)
 
-        if should_enter_long(df):
-            price = df.iloc[-1]["close"]
-            qty = calculate_quantity(price, CAPITAL, RISK_PER_TRADE)
-            execute_trade(client, SYMBOL, qty, price, TP_PCT, SL_PCT)
+            last = df.iloc[-1]
+            log(
+                f"{symbol} | Close={last['close']:.6f} | "
+                f"EMA50={last['ema50']:.6f} | "
+                f"StochK={last['stoch_k']:.2f} | "
+                f"VolOK={last['high_volume']}"
+            )
+
+            if should_enter_long(df):
+                if already_in_position(client, symbol):
+                    log(f"{symbol} Already in position, skipping trade")
+                else:
+                    price = last["close"]
+                    qty = calculate_quantity(price, CAPITAL, RISK_PER_TRADE)
+                    execute_trade(client, symbol, qty, price, TP_PCT, SL_PCT)
 
         time.sleep(60)
 

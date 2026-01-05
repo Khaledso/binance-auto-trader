@@ -1,0 +1,25 @@
+binance-auto-trader/
+│
+├── README.md
+├── requirements.txt
+├── .gitignore
+│
+├── config/
+│   └── config.py
+│
+├── data/
+│   └── market_data.py
+│
+├── indicators/
+│   └── indicators.py
+│
+├── strategy/
+│   └── long_strategy.py
+│
+├── execution/
+│   └── trader.py
+│
+├── utils/
+│   └── logger.py
+│
+└── main.py
